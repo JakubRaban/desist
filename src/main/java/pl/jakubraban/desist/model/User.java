@@ -52,4 +52,7 @@ public class User {
         return saltedPassword.toString();
     }
 
+    public String getUsername() {
+        return username;
+    }
 }
