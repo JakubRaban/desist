@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+}
+
+group 'pl.jakubraban'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = JavaVersion.VERSION_11
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    implementation 'com.h2database:h2:1.4.200'
+    implementation 'org.hibernate:hibernate-core:5.4.11.Final'
+}
