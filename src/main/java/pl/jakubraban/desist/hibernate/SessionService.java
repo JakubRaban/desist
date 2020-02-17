@@ -1,4 +1,4 @@
-package pl.jakubraban.desist;
+package pl.jakubraban.desist.hibernate;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;

@@ -1,6 +1,9 @@
+
 plugins {
     id 'java'
 }
+
+apply plugin: 'java'
 
 group 'pl.jakubraban'
 version '1.0-SNAPSHOT'
@@ -16,4 +19,22 @@ dependencies {
     implementation 'com.h2database:h2:1.4.200'
     implementation 'org.hibernate:hibernate-core:5.4.11.Final'
     implementation 'commons-codec:commons-codec:1.11'
+    implementation 'info.picocli:picocli:4.2.0'
+    annotationProcessor 'info.picocli:picocli-codegen:4.2.0'
+}
+
+compileJava {
+    options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
+}
+
+apply plugin: 'application'
+mainClassName = "pl.jakubraban.desist.Main"
+
+jar {
+    manifest {
+        attributes "Main-Class": "$mainClassName"
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }

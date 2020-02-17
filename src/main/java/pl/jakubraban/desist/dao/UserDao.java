@@ -1,7 +1,7 @@
 package pl.jakubraban.desist.dao;
 
 import org.hibernate.Session;
-import pl.jakubraban.desist.SessionService;
+import pl.jakubraban.desist.hibernate.SessionService;
 import pl.jakubraban.desist.model.User;
 
 import javax.persistence.NoResultException;

@@ -27,8 +27,9 @@ public class User {
     public User() {}
 
     public User(String username, String plainTextPassword) {
-        if (username.length() < minimumUsernameLength) throw new IllegalArgumentException("Username is too short (min. " + minimumUsernameLength + " characters)");
-        if (username.length() > maximumUsernameLength) throw new IllegalArgumentException("Username is too long (max. " + maximumUsernameLength + " characters");
+        if (username.length() < minimumUsernameLength || username.length() > maximumUsernameLength) {
+            throw new IllegalArgumentException("Username is too short or too long (min. " + minimumUsernameLength + ", max. " + maximumUsernameLength + " characters");
+        }
         if (plainTextPassword.length() < minimumPlainTextPasswordLength) throw new IllegalArgumentException("Password is too short (min. " + minimumPlainTextPasswordLength + " characters)");
         this.username = username;
         this.createdOn = LocalDateTime.now();

@@ -73,7 +73,7 @@ public class Lock {
     private String getEncryptionKey() {
         return lockedServiceName.toUpperCase() + "#" +
                 lockOwner.getUsername() + "@" +
-                dateCreated.minusMonths(expiryDate.getDayOfYear()).toString().substring(0, 19);
+                dateCreated.minusMonths(expiryDate.getDayOfYear()).toString().substring(0, 19) + "4$eG6a)";
     }
 
     private String getFormattedDate(LocalDateTime date) {

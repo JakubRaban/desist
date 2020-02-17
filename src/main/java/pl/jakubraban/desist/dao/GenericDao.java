@@ -2,7 +2,7 @@ package pl.jakubraban.desist.dao;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import pl.jakubraban.desist.SessionService;
+import pl.jakubraban.desist.hibernate.SessionService;
 
 import javax.persistence.PersistenceException;
 import javax.persistence.TypedQuery;
