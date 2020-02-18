@@ -21,15 +21,16 @@ public class Lock {
     @Column(name = "LOCK_ID")
     private int lockId;
     @ManyToOne
-    @Column(name = "OWNER_USER_ID")
     private User lockOwner;
-    @Column(name = "SERVICE_NAME", nullable = false)
-    private String lockedServiceName;
+    @Column(name = "LOCK_NAME", nullable = false)
+    private String lockIdentifier;
     @Column(name = "LOCKED_PASSWORD", nullable = false)
     private String encryptedLockedPassword;
     @Column(name = "DATE_CREATED", nullable = false)
     private LocalDateTime dateCreated;
-    @Column(name = "EXPIRY_DATE", nullable = false)
+    @Column(name = "ACTIVATION_DATE")
+    private LocalDateTime activationDate;
+    @Column(name = "EXPIRY_DATE")
     private LocalDateTime expiryDate;
     @Column(name = "LOCK_STATUS", nullable = false)
     @Enumerated(value = EnumType.STRING)
@@ -39,11 +40,10 @@ public class Lock {
 
     public Lock() { }
 
-    public Lock(User lockingUser, String lockedServiceName, String plainTextLockedPassword, Duration duration) {
+    public Lock(User lockingUser, String lockIdentifier, String plainTextLockedPassword) {
         this.lockOwner = lockingUser;
-        this.lockedServiceName = lockedServiceName;
+        this.lockIdentifier = lockIdentifier;
         this.dateCreated = LocalDateTime.now();
-        this.expiryDate = this.dateCreated.plus(duration);
         this.lockStatus = CREATED;
         this.isRemoved = false;
         this.encryptedLockedPassword = new AES(getEncryptionKey()).encrypt(plainTextLockedPassword);
@@ -55,14 +55,16 @@ public class Lock {
         return new AES(getEncryptionKey()).decrypt(this.encryptedLockedPassword);
     }
 
-    public void activate() {
+    public void activate(Duration duration) {
         if (this.lockStatus == ACTIVE) throw new LockException("This lock is already active");
-        if (this.lockStatus == OPENED) throw new LockException("This lock is already opened; create new lock for this service to store another password");
+        if (this.lockStatus == OPENED) throw new LockException("This lock is already opened; remove this and create new lock for this service to store another password");
         this.lockStatus = ACTIVE;
+        this.activationDate = LocalDateTime.now();
+        this.expiryDate = this.activationDate.plus(duration);
     }
 
     public void remove() {
-        if (this.lockStatus == ACTIVE) throw new LockException("Attempted to remove active lock");
+        if (this.lockStatus == ACTIVE) throw new LockException("Attempted to remove active or not opened lock");
         this.isRemoved = true;
     }
 
@@ -71,14 +73,21 @@ public class Lock {
     }
 
     private String getEncryptionKey() {
-        return lockedServiceName.toUpperCase() + "#" +
+        return lockIdentifier.toUpperCase() + "#" +
                 lockOwner.getUsername() + "@" +
-                dateCreated.minusMonths(expiryDate.getDayOfYear()).toString().substring(0, 19) + "4$eG6a)";
+                dateCreated.minusMonths(dateCreated.getDayOfYear()).toString().substring(0, 19) + "4$eG6a)";
     }
 
     private String getFormattedDate(LocalDateTime date) {
-        var datePattern = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(Locale.getDefault());
+        var datePattern = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(Locale.getDefault());
         return date.format(datePattern);
     }
 
+    public String getFormattedExpiryDate() {
+        return getFormattedDate(this.expiryDate);
+    }
+
+    public String getLockIdentifier() {
+        return lockIdentifier;
+    }
 }

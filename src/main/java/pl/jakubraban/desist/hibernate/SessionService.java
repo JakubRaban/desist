@@ -7,6 +7,7 @@ import org.hibernate.cfg.Configuration;
 public class SessionService {
     private static final SessionFactory sessionFactory = new Configuration()
             .addAnnotatedClass(pl.jakubraban.desist.model.User.class)
+            .addAnnotatedClass(pl.jakubraban.desist.model.Lock.class)
             .configure()
             .buildSessionFactory();
 

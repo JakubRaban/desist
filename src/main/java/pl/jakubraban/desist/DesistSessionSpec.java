@@ -1,8 +1,6 @@
 package pl.jakubraban.desist;
 
-import pl.jakubraban.desist.cli.commands.ExitCommand;
-import pl.jakubraban.desist.cli.commands.LoginCommand;
-import pl.jakubraban.desist.cli.commands.SetupCommand;
+import pl.jakubraban.desist.cli.commands.*;
 import pl.jakubraban.desist.model.User;
 
 import java.util.HashMap;
@@ -15,8 +13,10 @@ public class DesistSessionSpec {
 
     public DesistSessionSpec() {
         this.commands = new HashMap<>() {{
-            put("login", LoginCommand.class);
             put("setup", SetupCommand.class);
+            put("login", LoginCommand.class);
+            put("logout", LogoutCommand.class);
+            put("lock", LockCommand.class);
             put("exit", ExitCommand.class);
         }};
     }
@@ -25,12 +25,17 @@ public class DesistSessionSpec {
         this.loggedUser = user;
     }
 
+    public User getLoggedUser() {
+        return loggedUser;
+    }
+
     public void logout() {
+        if (getLoggedUser() == null) throw new IllegalStateException("No user is logged in.");
         setLoggedUser(null);
     }
 
-    public User getLoggedUser() {
-        return loggedUser;
+    public boolean isUserLogged() {
+        return getLoggedUser() != null;
     }
 
     public Class<?> getCommandClass(String command) {

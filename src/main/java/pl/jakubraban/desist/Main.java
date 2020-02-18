@@ -4,7 +4,6 @@ import picocli.CommandLine;
 import pl.jakubraban.desist.cli.CommandLineUtils;
 import pl.jakubraban.desist.hibernate.SessionService;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.util.logging.Level;
@@ -37,6 +36,7 @@ public class Main {
         System.out.println(newLine);
         System.out.println("Desist -- keep your passwords safe from yourself");
         System.out.println("(C) Jakub Raban 2020. All rights reserved");
+        System.out.println("Log in to Desist using login command or create an account using setup command");
         System.out.println("Type help to get more info.");
         System.out.println(newLine);
     }
@@ -51,7 +51,7 @@ public class Main {
 
     private static void processCommand(String command) {
         if (command.isBlank()) return;
-        String[] splitCommand = command.strip().split(" ");
+        String[] splitCommand = command.strip().split("\\s");
         String commandBase = splitCommand[0];
         String[] commandArgs = new String[0];
         if (splitCommand.length > 1) {
@@ -67,7 +67,7 @@ public class Main {
             } else {
                 System.out.println("Unknown command. Type help for commands usage.");
             }
-        } catch (InstantiationException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+        } catch (ReflectiveOperationException e) {
             e.printStackTrace();
         }
     }

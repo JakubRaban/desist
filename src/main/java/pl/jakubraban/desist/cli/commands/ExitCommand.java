@@ -1,19 +1,16 @@
 package pl.jakubraban.desist.cli.commands;
 
-import picocli.CommandLine.*;
+import picocli.CommandLine.Command;
 import pl.jakubraban.desist.DesistSessionSpec;
 
-import java.util.concurrent.Callable;
-
 @Command(name = "exit", description = "Exit Desist")
-public class ExitCommand implements Callable<Integer> {
+public class ExitCommand implements Runnable {
 
     public ExitCommand(DesistSessionSpec sessionSpec) { }
 
     @Override
-    public Integer call() {
+    public void run() {
         System.exit(0);
-        return 0;
     }
 
 }

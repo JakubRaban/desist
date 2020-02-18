@@ -3,16 +3,15 @@ package pl.jakubraban.desist.cli.commands;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
+import pl.jakubraban.desist.AccountManager;
 import pl.jakubraban.desist.DesistSessionSpec;
 import pl.jakubraban.desist.dao.UserDao;
-import pl.jakubraban.desist.model.User;
+import pl.jakubraban.desist.exceptions.UserAlreadyExistsException;
 
 import java.io.Console;
-import java.util.Optional;
-import java.util.concurrent.Callable;
 
 @Command(name = "setup", mixinStandardHelpOptions = true, description = "Sets up a new Desist local account")
-public class SetupCommand implements Callable<Integer> {
+public class SetupCommand implements Runnable {
 
     @Parameters(index = "0", description = "Username of your choice")
     private String username;
@@ -31,28 +30,19 @@ public class SetupCommand implements Callable<Integer> {
     }
 
     @Override
-    public Integer call() {
+    public void run() {
         if (password == null) {
             System.out.print("Password (hidden): ");
             password = console.readPassword();
         }
-        User newUser;
         try {
-            newUser = new User(username, new String(password));
-        } catch (IllegalArgumentException e) {
-            System.out.println(e.getMessage());
-            return 1;
-        }
-        Optional<User> existingUser = users.findByUsername(username);
-        if (existingUser.isPresent()) {
-            System.out.println("This username is already in use. Try picking another one.");
-            return 1;
-        } else {
-            users.create(newUser);
+            AccountManager.createAccount(username, new String(password));
             System.out.println("Your account is set up. Use login command to start using Desist");
             System.out.println("Username: " + username);
             System.out.println("Password: ***");
-            return 0;
+        } catch (IllegalArgumentException | UserAlreadyExistsException e) {
+            System.out.println("Account was not created");
+            System.out.println(e.getMessage());
         }
     }
 }

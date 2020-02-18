@@ -1,16 +1,18 @@
 package pl.jakubraban.desist.cli.commands;
 
-import picocli.CommandLine.*;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 import pl.jakubraban.desist.DesistSessionSpec;
+import pl.jakubraban.desist.LoginAttempt;
 import pl.jakubraban.desist.dao.UserDao;
-import pl.jakubraban.desist.model.User;
+import pl.jakubraban.desist.exceptions.UserNotFoundException;
 
+import javax.security.auth.login.LoginException;
 import java.io.Console;
-import java.util.Optional;
-import java.util.concurrent.Callable;
 
 @Command(name = "login")
-public class LoginCommand implements Callable<Integer> {
+public class LoginCommand implements Runnable {
 
     @Parameters(index = "0", description = "Your username")
     private String username;
@@ -29,25 +31,21 @@ public class LoginCommand implements Callable<Integer> {
     }
 
     @Override
-    public Integer call() {
-        Optional<User> optionalUser = users.findByUsername(username);
-        if (optionalUser.isEmpty()) {
-            System.out.println("The specified username was not found. Create an account using setup command first.");
-            return 1;
-        }
-        if (password == null) {
-            System.out.print("Password (hidden): ");
-            password = console.readPassword();
-        }
-        User loggingUser = optionalUser.get();
-        if (loggingUser.validatePassword(new String(password))) {
-            sessionSpec.setLoggedUser(loggingUser);
+    public void run() {
+
+        try {
+            LoginAttempt loginAttempt = new LoginAttempt(sessionSpec, username);
+            if (password == null) {
+                System.out.print("Password (hidden): ");
+                password = console.readPassword();
+            }
+            loginAttempt.providePassword(new String(password));
             System.out.println("You're now logged in.");
-            return 0;
-        } else {
-            System.out.println("Specified password is not correct. Please try again.");
-            return 1;
+        } catch (LoginException | UserNotFoundException e) {
+            System.out.println("Login failed");
+            System.out.println(e.getMessage());
         }
+
     }
 
 }
