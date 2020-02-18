@@ -34,6 +34,7 @@ public class LoginCommand implements Runnable {
     public void run() {
 
         try {
+            if (sessionSpec.isUserLogged()) throw new LoginException("Log out first to log in as another user");
             LoginAttempt loginAttempt = new LoginAttempt(sessionSpec, username);
             if (password == null) {
                 System.out.print("Password (hidden): ");

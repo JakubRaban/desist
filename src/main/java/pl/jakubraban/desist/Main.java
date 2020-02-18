@@ -5,6 +5,7 @@ import picocli.CommandLine;
 import pl.jakubraban.desist.cli.CommandLineUtils;
 import pl.jakubraban.desist.hibernate.SessionService;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.util.logging.Level;
@@ -18,10 +19,11 @@ public class Main {
 
     public static void main(String ... args) {
 
-        AnsiConsole.systemInstall();
         System.out.println("\nStarting Desist ...\n");
         Logger.getLogger("org.hibernate").setLevel(Level.WARNING);
         SessionService.openSession();
+        AnsiConsole.systemInstall();
+        enableWindows10TerminalColorSupport();
         CommandLineUtils.cls();
         printGreeting();
 
@@ -31,12 +33,6 @@ public class Main {
             processCommand(requestedCommand);
             System.out.println();
         }
-
-//        try {
-//            Runtime.getRuntime().exec("reg ADD HKCU\\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f");
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
 
     }
 
@@ -54,6 +50,16 @@ public class Main {
             System.out.print("desist(" + sessionSpec.getLoggedUser().getUsername() + ")> ");
         } else {
             System.out.print("desist> ");
+        }
+    }
+
+    private static void enableWindows10TerminalColorSupport() {
+        if (System.getProperty("os.name").equalsIgnoreCase("windows 10")) {
+            try {
+                Runtime.getRuntime().exec("reg ADD HKCU\\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

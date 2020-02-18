@@ -1,5 +1,6 @@
 package pl.jakubraban.desist;
 
+import org.hibernate.annotations.common.util.impl.Log;
 import pl.jakubraban.desist.dao.LockDao;
 import pl.jakubraban.desist.exceptions.LockException;
 import pl.jakubraban.desist.model.Lock;
@@ -30,11 +31,23 @@ public class LockManager {
     }
 
     public Lock activateLock(String identifier, Duration duration) throws LoginException {
+        return activateLock(identifier, duration, LockActivationMode.FIRST_ACTIVATION);
+    }
+
+    public Lock reactivateLock(String identifier, Duration duration) throws LoginException {
+        return activateLock(identifier, duration, LockActivationMode.REACTIVATE);
+    }
+
+    private Lock activateLock(String identifier, Duration duration, LockActivationMode mode) throws LoginException {
         if (userNotLoggedIn()) throw new LoginException("Login first to activate a lock");
         Optional<Lock> requestedLock = getRequestedLock(identifier);
         if (requestedLock.isPresent()) {
             Lock lock = requestedLock.get();
-            lock.activate(duration);
+            if (mode == LockActivationMode.FIRST_ACTIVATION) {
+                lock.activate(duration);
+            } else {
+                lock.reactivate(duration);
+            }
             locks.save(lock);
             return lock;
         } else {
@@ -103,4 +116,7 @@ public class LockManager {
         NORMAL, FORCE
     }
 
+    private enum LockActivationMode {
+        FIRST_ACTIVATION, REACTIVATE
+    }
 }

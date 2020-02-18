@@ -2,6 +2,7 @@ package pl.jakubraban.desist.model;
 
 import pl.jakubraban.desist.encryption.AES;
 import pl.jakubraban.desist.exceptions.LockException;
+import pl.jakubraban.desist.exceptions.LockReactivationException;
 import pl.jakubraban.desist.exceptions.LockRemovalException;
 
 import javax.persistence.*;
@@ -57,8 +58,12 @@ public class Lock {
     }
 
     public void activate(Duration duration) {
-        if (this.lockStatus == ACTIVE) throw new LockException("This lock was already activated");
-        if (this.lockStatus == OPENED) throw new LockException("This lock is already opened; remove this and create a new lock for this service to store another password");
+        if (this.lockStatus == ACTIVE) throw new LockReactivationException("This lock was already activated");
+        if (this.lockStatus == OPENED) throw new LockReactivationException("This lock is already opened; remove this and create a new lock for this service to store another password");
+        reactivate(duration);
+    }
+
+    public void reactivate(Duration duration) {
         this.lockStatus = ACTIVE;
         this.activationDate = LocalDateTime.now();
         this.expiryDate = this.activationDate.plus(duration);
@@ -71,7 +76,7 @@ public class Lock {
 
     public void remove() {
         if (this.lockStatus == ACTIVE) throw new LockRemovalException("Attempted to remove active or not opened lock");
-        this.isRemoved = true;
+        forceRemove();
     }
 
     public void forceRemove() {

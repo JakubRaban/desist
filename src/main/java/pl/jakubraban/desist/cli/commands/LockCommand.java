@@ -9,15 +9,17 @@ import pl.jakubraban.desist.cli.CommandLineTable;
 import pl.jakubraban.desist.cli.CommandLineUtils;
 import pl.jakubraban.desist.dao.LockDao;
 import pl.jakubraban.desist.exceptions.LockException;
+import pl.jakubraban.desist.exceptions.LockReactivationException;
 import pl.jakubraban.desist.exceptions.LockRemovalException;
 import pl.jakubraban.desist.model.Lock;
-
-import static picocli.CommandLine.Help.Ansi.AUTO;
 
 import javax.security.auth.login.LoginException;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.time.Duration;
+import java.util.List;
+
+import static picocli.CommandLine.Help.Ansi.AUTO;
 
 @Command(name = "lock", description = "Manipulate available locks", synopsisSubcommandLabel = "COMMAND", mixinStandardHelpOptions = true)
 public class LockCommand implements Runnable {
@@ -72,16 +74,24 @@ public class LockCommand implements Runnable {
     }
 
     @Command(name = "activate", mixinStandardHelpOptions = true, description = "Activate specified lock for a given duration")
-    public void activate(@Parameters(index = "1", paramLabel = "duration", description = "Duration in seconds, minutes, hours of days of this lock," +
-                                " e.g. 30s, 10m, 12h, 3d. The number must be an integer.") String durationString,
-                         @Parameters(index = "0", paramLabel = "lock-id", description = "Identifier of a lock") String lockIdentifier,
+    public void activate(@Parameters(index = "0", paramLabel = "lock-id", description = "Identifier of a lock") String lockIdentifier,
+                         @Parameters(index = "1", paramLabel = "duration", description = "Duration in seconds, minutes, hours of days of this lock," +
+                                 " e.g. 30s, 10m, 12h, 3d. The number must be an integer.") String durationString,
                          @Option(names = {"-a", "--again"}, defaultValue = "false", description = "Use to reactivate an opened or expired lock again with the same password") boolean again) {
 
         try {
             Duration lockDuration = parseDuration(durationString);
-            var lock = lockManager.activateLock(lockIdentifier, lockDuration);
+            Lock lock;
+            if (!again) {
+                lock = lockManager.activateLock(lockIdentifier, lockDuration);
+            } else {
+                lock = lockManager.reactivateLock(lockIdentifier, lockDuration);
+            }
             CommandLineUtils.cls();
             System.out.println("\n" + lockIdentifier + " lock is activated until " + lock.getFormattedExpiryDate());
+        } catch (LockReactivationException e) {
+            System.out.println(e.getMessage());
+            System.out.println("Try this command with --again option to reactivate expired or opened lock with the same password");
         } catch (LoginException | LockException e) {
             System.out.println("Failed to activate lock");
             System.out.println(e.getMessage());
@@ -91,6 +101,13 @@ public class LockCommand implements Runnable {
             System.out.println("Duration unit you specified was not correct");
         }
 
+    }
+
+    @Command(name = "reactivate", mixinStandardHelpOptions = true, description = "Reactivate an opened or expired lock again with the same password")
+    public void reactivate(@Parameters(index = "0", paramLabel = "lock-id", description = "Identifier of a lock") String lockIdentifier,
+                           @Parameters(index = "1", paramLabel = "duration", description = "Duration in seconds, minutes, hours of days of this lock," +
+                                   " e.g. 30s, 10m, 12h, 3d. The number must be an integer.") String durationString) {
+        activate(lockIdentifier, durationString, true);
     }
 
     @Command(name = "open", mixinStandardHelpOptions = true, description = "Open an expired lock and get the password")
@@ -104,7 +121,8 @@ public class LockCommand implements Runnable {
                 copyToClipboard(plainTextPassword);
                 System.out.println("Password to " + lockIdentifier + " lock was copied to clipboard");
             }
-            if (!noPrint) System.out.println(AUTO.string("Your " + lockIdentifier + " password is" + "\n@|bg(red),black " + plainTextPassword + "|@"));
+            if (!noPrint)
+                System.out.println(AUTO.string("Your " + lockIdentifier + " password is" + "\n@|bg(red),black " + plainTextPassword + "|@"));
             if (!copy && noPrint) System.out.println("Please use --no-print option only with --copy option");
         } catch (LockException | LoginException e) {
             System.out.println("Failed to open lock");
@@ -132,21 +150,18 @@ public class LockCommand implements Runnable {
     }
 
     @Command(name = "remove", mixinStandardHelpOptions = true, description = "Remove a lock")
-    public void remove(@Parameters(index = "0", arity = "1..*", paramLabel = "lock-id", description = "Identifier of a lock") String[] lockIdentifiers,
+    public void remove(@Parameters(index = "0", paramLabel = "lock-id", description = "Identifier of a lock") String lockIdentifier,
                        @Option(names = {"-f", "--force"}, description = "Remove a lock even if it's active or not yet opened") boolean forceRemove) {
 
-        String deletedIdentifier = "";
         try {
-            for (String identifier : lockIdentifiers) {
-                deletedIdentifier = identifier;
-                if (forceRemove) {
-                    lockManager.forceRemoveLock(identifier);
-                } else {
-                    lockManager.removeLock(identifier);
-                }
+            if (forceRemove) {
+                lockManager.forceRemoveLock(lockIdentifier);
+            } else {
+                lockManager.removeLock(lockIdentifier);
             }
+            System.out.println("Lock successfully removed");
         } catch (LockRemovalException e) {
-            System.out.println("Failed to remove lock: " + deletedIdentifier);
+            System.out.println("Failed to remove lock");
             System.out.println("Attempted to remove active or not yet opened lock");
             System.out.println("Use lock remove --force to remove such a lock");
         } catch (LockException | LoginException e) {
@@ -162,11 +177,16 @@ public class LockCommand implements Runnable {
             table.setShowVerticalLines(true);
             String[] tableHeaders = {"Identifier", "Status", "Active since", "Expires on"};
             table.setHeaders(tableHeaders);
-            for (Lock lock : lockManager.status()) {
+            List<Lock> userLocks = lockManager.status();
+            for (Lock lock : userLocks) {
                 table.addRow(lock.getLockIdentifier(), lock.getStatusSummary(), lock.getFormattedActivationDate(), lock.getFormattedExpiryDate());
             }
-            System.out.println();
-            table.print();
+            if (!userLocks.isEmpty()) {
+                System.out.println();
+                table.print();
+            } else {
+                System.out.println("No locks to display. Create a lock using lock create command.");
+            }
         } catch (LoginException e) {
             System.out.println("Operation failed");
             System.out.println(e.getMessage());
