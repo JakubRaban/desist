@@ -1,5 +1,6 @@
 package pl.jakubraban.desist.cli.commands;
 
+import org.fusesource.jansi.AnsiConsole;
 import picocli.CommandLine.Command;
 import pl.jakubraban.desist.DesistSessionSpec;
 
@@ -11,6 +12,7 @@ public class ExitCommand implements Runnable {
     @Override
     public void run() {
         System.exit(0);
+        AnsiConsole.systemUninstall();
     }
 
 }

@@ -2,6 +2,7 @@ package pl.jakubraban.desist.model;
 
 import pl.jakubraban.desist.encryption.AES;
 import pl.jakubraban.desist.exceptions.LockException;
+import pl.jakubraban.desist.exceptions.LockRemovalException;
 
 import javax.persistence.*;
 import java.time.Duration;
@@ -56,20 +57,50 @@ public class Lock {
     }
 
     public void activate(Duration duration) {
-        if (this.lockStatus == ACTIVE) throw new LockException("This lock is already active");
-        if (this.lockStatus == OPENED) throw new LockException("This lock is already opened; remove this and create new lock for this service to store another password");
+        if (this.lockStatus == ACTIVE) throw new LockException("This lock was already activated");
+        if (this.lockStatus == OPENED) throw new LockException("This lock is already opened; remove this and create a new lock for this service to store another password");
         this.lockStatus = ACTIVE;
         this.activationDate = LocalDateTime.now();
         this.expiryDate = this.activationDate.plus(duration);
     }
 
+    public void extend(Duration duration) {
+        if (this.isExpired() || this.lockStatus != ACTIVE) throw new LockException("This lock is not active");
+        this.expiryDate = this.expiryDate.plus(duration);
+    }
+
     public void remove() {
-        if (this.lockStatus == ACTIVE) throw new LockException("Attempted to remove active or not opened lock");
+        if (this.lockStatus == ACTIVE) throw new LockRemovalException("Attempted to remove active or not opened lock");
         this.isRemoved = true;
     }
 
     public void forceRemove() {
         this.isRemoved = true;
+    }
+
+    public String getFormattedExpiryDate() {
+        return expiryDate == null ? "" : getFormattedDate(this.expiryDate);
+    }
+
+    public String getFormattedActivationDate() {
+        return activationDate == null ? "" : getFormattedDate(this.activationDate);
+    }
+
+    public String getLockIdentifier() {
+        return lockIdentifier;
+    }
+
+    public String getStatusSummary() {
+        if (isRemoved) return "Removed";
+        if (lockStatus == CREATED) return "Created";
+        if (lockStatus == ACTIVE && isExpired()) return "Expired";
+        if (lockStatus == ACTIVE) return "Active";
+        if (lockStatus == OPENED) return "Opened";
+        return "";
+    }
+
+    public boolean isExpired() {
+        return expiryDate.isBefore(LocalDateTime.now());
     }
 
     private String getEncryptionKey() {
@@ -81,13 +112,5 @@ public class Lock {
     private String getFormattedDate(LocalDateTime date) {
         var datePattern = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(Locale.getDefault());
         return date.format(datePattern);
-    }
-
-    public String getFormattedExpiryDate() {
-        return getFormattedDate(this.expiryDate);
-    }
-
-    public String getLockIdentifier() {
-        return lockIdentifier;
     }
 }

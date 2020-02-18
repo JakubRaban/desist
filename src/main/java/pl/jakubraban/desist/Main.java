@@ -1,5 +1,6 @@
 package pl.jakubraban.desist;
 
+import org.fusesource.jansi.AnsiConsole;
 import picocli.CommandLine;
 import pl.jakubraban.desist.cli.CommandLineUtils;
 import pl.jakubraban.desist.hibernate.SessionService;
@@ -17,6 +18,7 @@ public class Main {
 
     public static void main(String ... args) {
 
+        AnsiConsole.systemInstall();
         System.out.println("\nStarting Desist ...\n");
         Logger.getLogger("org.hibernate").setLevel(Level.WARNING);
         SessionService.openSession();
@@ -29,6 +31,12 @@ public class Main {
             processCommand(requestedCommand);
             System.out.println();
         }
+
+//        try {
+//            Runtime.getRuntime().exec("reg ADD HKCU\\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f");
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
     }
 
